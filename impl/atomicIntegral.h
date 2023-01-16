@@ -8,8 +8,9 @@ template <typename T>
 concept Integral = std::is_integral_v<T>;
 
 template <Integral T>
-class AtomInterface
+class AtomInterface<T>
 {
+  public:
     enum class ModifyType
     {
         modify
@@ -35,7 +36,8 @@ class AtomInterface
         return ModifyRecord(rec.newVal_, rec.oldVal_);
     }
 
-    ModifyRecord modify<T>(ModifyType type, T newVal)
+    template <Integral Input>
+    ModifyRecord modify(ModifyType type, Input newVal)
     {
         T oldVal = val_;
         val_ = newVal;
@@ -59,4 +61,7 @@ class AtomInterface
     {
         return val_;
     }
+
+  private:
+    T val_;
 };
