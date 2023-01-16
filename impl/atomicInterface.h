@@ -10,9 +10,8 @@ class AtomInterface
     class ModifyRecord; // must support move constructor
 
   public:
-    // 前提: undo redo 可以操作抵消
-    // undo作用于commit, redo作用于undo, 但他们本质上都是undo
-    ModifyRecord undo(ModifyRecord &);
+    // rollback可以同时作用于undo/redo
+    ModifyRecord rollback(ModifyRecord &);
 
     template <typename... Param>
     ModifyRecord modify(ModifyType, Param...);

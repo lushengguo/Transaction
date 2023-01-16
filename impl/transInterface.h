@@ -173,7 +173,7 @@ class TransInterface
         {
             std::string oldStr = val_.serialSelf();
             auto &oldRecord = *riter;
-            auto newRecord = val_.undo(oldRecord);
+            auto newRecord = val_.rollback(oldRecord);
             newCommit->modifyRecords_.emplace_back(std::move(newRecord));
             std::cout << currentLayerLogPrefix(commit) << "undo modifyRecord, oldVal=" << oldStr
                       << ", newVal=" << val_.serialSelf() << std::endl;
@@ -218,7 +218,7 @@ class TransInterface
         {
             std::string oldStr = val_.serialSelf();
             auto &oldRecord = *riter;
-            auto newRecord = val_.undo(oldRecord);
+            auto newRecord = val_.rollback(oldRecord);
             newCommit->modifyRecords_.emplace_back(std::move(newRecord));
             std::cout << currentLayerLogPrefix(commit) << "undo modifyRecord, oldVal=" << oldStr
                       << ", newVal=" << val_.serialSelf() << std::endl;
