@@ -27,16 +27,17 @@ void enableLog()
 }
 
 template <typename Tp>
-class TransInterface
+class TransInterface : private AtomInterface<Tp>
 {
   public:
-    typedef AtomInterface<Tp> ValueType;
-    using ModifyRecord = typename ValueType::ModifyRecord;
-    using ModifyType = typename ValueType::ModifyType;
+    typedef AtomInterface<Tp> BaseType;
+    using typename BaseType::ModifyRecord;
+    using typename BaseType::ModifyType;
+    using typename BaseType::ValueType;
 
   public:
     template <typename... Args>
-    TransInterface(Args... args) : val_(std::forward<Args>(args)...), nextCommitId_(0)
+    TransInterface(Args... args) : BaseType(std::forward<Args>(args)...), nextCommitId_(0)
     {
     }
 
@@ -70,16 +71,16 @@ class TransInterface
 
   public:
     template <typename... Args>
-    void modify(typename ValueType::ModifyType modifyType, Args... args)
+    void modify(ModifyType modifyType, Args... args)
     {
         assert(inTransaction());
-        auto modifyRecord = val_.modify(modifyType, std::forward<Args>(args)...);
+        auto modifyRecord = BaseType::modify(modifyType, std::forward<Args>(args)...);
         curCommit_->modifyRecords_.emplace_back(std::move(modifyRecord));
     }
 
     const ValueType &get() const
     {
-        return val_;
+        return BaseType::getRaw();
     }
 
     bool inTransaction()
@@ -122,7 +123,7 @@ class TransInterface
         CommitId id = curCommit_->id_;
         curCommit_->tag_ = CommitTag::endTrans;
         LOG << currentLayerLogPrefix(curCommit_) << "end transaction, CommitId=" << id
-            << " modifyRecord:" << val_.serialModifyRecords(modifyRecords) << std::endl;
+            << " modifyRecord:" << BaseType::serialModifyRecords(modifyRecords) << std::endl;
         curCommit_ = curCommit_->parent_.lock();
         return id;
     }
@@ -183,16 +184,16 @@ class TransInterface
         newCommit->id_ = nextCommitId_++;
         newCommit->parent_ = commit->parent_;
         // 把commit的modifyRecord倒着跑一遍
-        LOG << currentLayerLogPrefix(commit) << "undo modifyRecord:" << val_.serialModifyRecords(commit->modifyRecords_)
+        LOG << currentLayerLogPrefix(commit) << "undo modifyRecord:" << BaseType::serialModifyRecords(commit->modifyRecords_)
             << std::endl;
         for (auto riter = commit->modifyRecords_.rbegin(); riter != commit->modifyRecords_.rend(); ++riter)
         {
-            std::string oldStr = val_.serialSelf();
+            std::string oldStr = BaseType::serialSelf();
             auto &oldRecord = *riter;
-            auto newRecord = val_.rollback(oldRecord);
+            auto newRecord = BaseType::rollback(oldRecord);
             newCommit->modifyRecords_.emplace_back(std::move(newRecord));
             LOG << currentLayerLogPrefix(commit) << "undo modifyRecord, oldVal=" << oldStr
-                << ", newVal=" << val_.serialSelf() << std::endl;
+                << ", newVal=" << BaseType::serialSelf() << std::endl;
         }
 
         auto parent = commit->parent_.lock();
@@ -228,16 +229,16 @@ class TransInterface
         newCommit->id_ = nextCommitId_++;
         newCommit->parent_ = commit->parent_;
         // 把commit的modifyRecord倒着跑一遍
-        LOG << currentLayerLogPrefix(commit) << "undo modifyRecord:" << val_.serialModifyRecords(commit->modifyRecords_)
+        LOG << currentLayerLogPrefix(commit) << "undo modifyRecord:" << BaseType::serialModifyRecords(commit->modifyRecords_)
             << std::endl;
         for (auto riter = commit->modifyRecords_.rbegin(); riter != commit->modifyRecords_.rend(); ++riter)
         {
-            std::string oldStr = val_.serialSelf();
+            std::string oldStr = BaseType::serialSelf();
             auto &oldRecord = *riter;
-            auto newRecord = val_.rollback(oldRecord);
+            auto newRecord = BaseType::rollback(oldRecord);
             newCommit->modifyRecords_.emplace_back(std::move(newRecord));
             LOG << currentLayerLogPrefix(commit) << "undo modifyRecord, oldVal=" << oldStr
-                << ", newVal=" << val_.serialSelf() << std::endl;
+                << ", newVal=" << BaseType::serialSelf() << std::endl;
         }
 
         auto parent = commit->parent_.lock();
@@ -385,7 +386,4 @@ class TransInterface
 
         return currentLayerLogPrefix(commits->front());
     }
-
-  private:
-    ValueType val_;
 };

@@ -2,10 +2,11 @@
 #include <string>
 #include <vector>
 
-template <typename ValueType>
+template <typename T>
 class AtomInterface
 {
   public:
+    typedef T ValueType;
     enum class ModifyType;
     class ModifyRecord; // must support move constructor
 

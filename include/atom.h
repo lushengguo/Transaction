@@ -1,5 +1,7 @@
 #pragma once
 #include "atomicIntegral.h"
 #include "transInterface.h"
+#include "atomicVector.h"
 
-typedef TransInterface<size_t> AtomSize_t;
+typedef TransInterface<int> AtomInt;
+typedef TransInterface<std::vector<int>> AtomIntVector;

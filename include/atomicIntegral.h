@@ -11,6 +11,7 @@ template <Integral T>
 class AtomInterface<T>
 {
   public:
+    typedef T ValueType;
     enum class ModifyType
     {
         modify
@@ -28,6 +29,11 @@ class AtomInterface<T>
         T oldVal_;
         T newVal_;
     };
+
+  public:
+    AtomInterface(T t) : val_(t)
+    {
+    }
 
     ModifyRecord rollback(ModifyRecord &rec)
     {
