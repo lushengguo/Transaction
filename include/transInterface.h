@@ -10,7 +10,7 @@
 #include <utility>
 #include <vector>
 
-static bool globalLogEnable = true;
+static bool globalLogEnable = false;
 
 #define LOG                                                                                                            \
     if (globalLogEnable)                                                                                               \
