@@ -10,6 +10,22 @@
 #include <utility>
 #include <vector>
 
+static bool globalLogEnable = true;
+
+#define LOG                                                                                                            \
+    if (globalLogEnable)                                                                                               \
+    std::cout
+
+void disableLog()
+{
+    globalLogEnable = false;
+}
+
+void enableLog()
+{
+    globalLogEnable = true;
+}
+
 template <typename Tp>
 class TransInterface
 {
@@ -77,7 +93,7 @@ class TransInterface
         newCommit->tag_ = CommitTag::beginTrans;
         newCommit->id_ = nextCommitId_++;
         newCommit->parent_ = curCommit_;
-        std::cout << currentLayerLogPrefix(newCommit) << "begin transaction, CommitId=" << newCommit->id_ << std::endl;
+        LOG << currentLayerLogPrefix(newCommit) << "begin transaction, CommitId=" << newCommit->id_ << std::endl;
 
         if (!curCommit_)
         {
@@ -105,8 +121,8 @@ class TransInterface
         std::vector<ModifyRecord> &modifyRecords = curCommit_->modifyRecords_;
         CommitId id = curCommit_->id_;
         curCommit_->tag_ = CommitTag::endTrans;
-        std::cout << currentLayerLogPrefix(curCommit_) << "end transaction, CommitId=" << id
-                  << " modifyRecord:" << val_.serialModifyRecords(modifyRecords) << std::endl;
+        LOG << currentLayerLogPrefix(curCommit_) << "end transaction, CommitId=" << id
+            << " modifyRecord:" << val_.serialModifyRecords(modifyRecords) << std::endl;
         curCommit_ = curCommit_->parent_.lock();
         return id;
     }
@@ -152,7 +168,7 @@ class TransInterface
             return;
 
         assert(commit->tag_ == CommitTag::endTrans);
-        std::cout << currentLayerLogPrefix(commit) << "undo transaction, CommitId=" << commit->id_ << std::endl;
+        LOG << currentLayerLogPrefix(commit) << "undo transaction, CommitId=" << commit->id_ << std::endl;
 
         auto children = commit->children_;
         if (children)
@@ -167,16 +183,16 @@ class TransInterface
         newCommit->id_ = nextCommitId_++;
         newCommit->parent_ = commit->parent_;
         // 把commit的modifyRecord倒着跑一遍
-        std::cout << currentLayerLogPrefix(commit)
-                  << "undo modifyRecord:" << val_.serialModifyRecords(commit->modifyRecords_) << std::endl;
+        LOG << currentLayerLogPrefix(commit) << "undo modifyRecord:" << val_.serialModifyRecords(commit->modifyRecords_)
+            << std::endl;
         for (auto riter = commit->modifyRecords_.rbegin(); riter != commit->modifyRecords_.rend(); ++riter)
         {
             std::string oldStr = val_.serialSelf();
             auto &oldRecord = *riter;
             auto newRecord = val_.rollback(oldRecord);
             newCommit->modifyRecords_.emplace_back(std::move(newRecord));
-            std::cout << currentLayerLogPrefix(commit) << "undo modifyRecord, oldVal=" << oldStr
-                      << ", newVal=" << val_.serialSelf() << std::endl;
+            LOG << currentLayerLogPrefix(commit) << "undo modifyRecord, oldVal=" << oldStr
+                << ", newVal=" << val_.serialSelf() << std::endl;
         }
 
         auto parent = commit->parent_.lock();
@@ -196,7 +212,7 @@ class TransInterface
             return;
 
         assert(commit->tag_ == CommitTag::undo);
-        std::cout << currentLayerLogPrefix(commit) << "redo transaction, CommitId=" << commit->id_ << std::endl;
+        LOG << currentLayerLogPrefix(commit) << "redo transaction, CommitId=" << commit->id_ << std::endl;
 
         auto children = commit->children_;
         if (children)
@@ -212,16 +228,16 @@ class TransInterface
         newCommit->id_ = nextCommitId_++;
         newCommit->parent_ = commit->parent_;
         // 把commit的modifyRecord倒着跑一遍
-        std::cout << currentLayerLogPrefix(commit)
-                  << "undo modifyRecord:" << val_.serialModifyRecords(commit->modifyRecords_) << std::endl;
+        LOG << currentLayerLogPrefix(commit) << "undo modifyRecord:" << val_.serialModifyRecords(commit->modifyRecords_)
+            << std::endl;
         for (auto riter = commit->modifyRecords_.rbegin(); riter != commit->modifyRecords_.rend(); ++riter)
         {
             std::string oldStr = val_.serialSelf();
             auto &oldRecord = *riter;
             auto newRecord = val_.rollback(oldRecord);
             newCommit->modifyRecords_.emplace_back(std::move(newRecord));
-            std::cout << currentLayerLogPrefix(commit) << "undo modifyRecord, oldVal=" << oldStr
-                      << ", newVal=" << val_.serialSelf() << std::endl;
+            LOG << currentLayerLogPrefix(commit) << "undo modifyRecord, oldVal=" << oldStr
+                << ", newVal=" << val_.serialSelf() << std::endl;
         }
 
         auto parent = commit->parent_.lock();
@@ -245,7 +261,7 @@ class TransInterface
         if (!commits)
             return nullptr;
 
-        std::cout << currentLayerLogPrefix(commits) << "findUndoCommit:: " << serialCommits(commits) << std::endl;
+        LOG << currentLayerLogPrefix(commits) << "findUndoCommit:: " << serialCommits(commits) << std::endl;
         size_t undoCnt = 0;
         for (auto iter = commits->rbegin(); iter != commits->rend(); ++iter)
         {
@@ -288,7 +304,7 @@ class TransInterface
         if (!commits)
             return nullptr;
 
-        std::cout << currentLayerLogPrefix(commits) << "findRedoCommit:: " << serialCommits(commits) << std::endl;
+        LOG << currentLayerLogPrefix(commits) << "findRedoCommit:: " << serialCommits(commits) << std::endl;
 
         size_t redoCnt = 0;
         for (auto iter = commits->rbegin(); iter != commits->rend(); ++iter)
