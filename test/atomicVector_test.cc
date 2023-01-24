@@ -1,7 +1,8 @@
 #include "atom.h"
 #include <gtest/gtest.h>
 
-template <typename... Args> bool equal(const std::vector<int> &vec, Args... args)
+template <typename... Args>
+bool equal(const std::vector<int> &vec, Args... args)
 {
     bool res = true;
     size_t index = 0;
@@ -10,7 +11,8 @@ template <typename... Args> bool equal(const std::vector<int> &vec, Args... args
     return res;
 }
 
-template <typename... Args> bool equal(const AtomIntVector &vec, Args... args)
+template <typename... Args>
+bool equal(const AtomIntVector &vec, Args... args)
 {
     const AtomIntVector::ValueType &raw = vec.get();
     return equal(raw, std::forward<Args>(args)...);
