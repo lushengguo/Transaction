@@ -1,8 +1,7 @@
 #include "atom.h"
 #include <gtest/gtest.h>
 
-template <typename... Args>
-bool equal(const std::vector<int> &vec, Args... args)
+template <typename... Args> bool equal(const std::vector<int> &vec, Args... args)
 {
     bool res = true;
     size_t index = 0;
@@ -11,8 +10,7 @@ bool equal(const std::vector<int> &vec, Args... args)
     return res;
 }
 
-template <typename... Args>
-bool equal(const AtomIntVector &vec, Args... args)
+template <typename... Args> bool equal(const AtomIntVector &vec, Args... args)
 {
     const AtomIntVector::ValueType &raw = vec.get();
     return equal(raw, std::forward<Args>(args)...);
@@ -93,4 +91,30 @@ TEST(AtomIntVector, RollbackEraseInRoot)
     as.undo();
     EXPECT_FALSE(as.inTransaction());
     EXPECT_TRUE(equal(as, 0));
+}
+
+TEST(AtomIntVector, UndoRedoRecursively)
+{
+    AtomIntVector as(1, 0);
+    as.beginTransaction();
+    {
+        as.modify(AtomIntVector::ModifyType::Insert, 0, 1);
+        as.beginTransaction();
+        {
+            EXPECT_TRUE(equal(as, 1));
+            as.modify(AtomIntVector::ModifyType::Insert, 0, 2);
+            EXPECT_TRUE(equal(as, 2, 1));
+            as.modify(AtomIntVector::ModifyType::Erase, 1);
+            EXPECT_TRUE(equal(as, 2));
+        }
+        as.endTransaction();
+        as.undo();
+        EXPECT_TRUE(equal(as, 1));
+        as.redo();
+        EXPECT_TRUE(equal(as, 2));
+    }
+    as.endTransaction();
+    as.undo();
+    EXPECT_FALSE(as.inTransaction());
+    EXPECT_TRUE(equal(as));
 }
